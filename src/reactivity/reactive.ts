@@ -13,6 +13,12 @@ const baseHandler = {
   },
 }
 
+// class ReactiveObject {
+  // constructor(target: object, isShallow: boolean = false, isReadonly: boolean = false) {
+  //   return 
+  // }
+// }
+
 export function reactive(target: object) {
   let proxyTarget = proxyMap.get(target)
   if (!proxyTarget) {

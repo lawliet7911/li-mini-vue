@@ -1,7 +1,6 @@
 let targetMap = new WeakMap()
 
-let activeEffect: any
-// let activeEffect: ReactiveEffect | null
+let activeEffect: ReactiveEffect | null
 let activeEffectStack: any[] = []
 
 class ReactiveEffect {
@@ -14,36 +13,19 @@ class ReactiveEffect {
     activeEffect = this
     cleanupEffect(this)
     activeEffectStack.push(this)
-    this._fn()
+    let result = this._fn()
     activeEffect = activeEffectStack[activeEffectStack.length - 2]
     activeEffectStack.length > 1 && activeEffectStack.pop()
+    return result
   }
 }
 
 export function effect(fn: Function) {
   let effect = new ReactiveEffect(fn)
-  effect.run()
+  return effect.run()
 }
 
-// export function effect(fn: Function) {
-//   function effectFn<ReactiveEffect>() {
-//     cleanupEffect(effectFn)
-//     activeEffectStack.push(effectFn)
-//     // console.log(activeEffectStack)
-//     activeEffect = effectFn
-//     fn()
-
-//     activeEffect = activeEffectStack[activeEffectStack.length - 2]
-//     activeEffectStack.length> 1 && activeEffectStack.pop()
-
-//     // console.log(activeEffectStack)
-//   }
-//   effectFn.deps = <any>[]
-//   activeEffectStack.push(effectFn)
-//   effectFn()
-// }
-
-function cleanupEffect(effect: any) {
+function cleanupEffect(effect: ReactiveEffect) {
   effect.deps.forEach((effect) => {})
   effect.deps.length = 0
 }
@@ -66,11 +48,4 @@ export function trigger(target: object, key: PropertyKey) {
   for (const effect of effects) {
     if (effect !== activeEffect) effect?.run()
   }
-  // effects &&
-  //   effects.forEach((effect) => {
-  //     if (effect == activeEffect) return
-  //     if(!effect)
-  //       console.log(1)
-  //     effect.run()
-  //   })
 }
