@@ -61,3 +61,7 @@ export function trigger(target: object, key: PropertyKey) {
     }
   }
 }
+
+export function stop(runner: any) {
+  runner.effect.stop()
+}
