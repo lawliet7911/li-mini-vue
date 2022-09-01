@@ -1,33 +1,39 @@
 let targetMap = new WeakMap()
 
 let activeEffect: ReactiveEffect | null
-let activeEffectStack: any[] = []
+// let activeEffectStack: any[] = []
 
 class ReactiveEffect {
   private _fn: Function
   deps: any[] = []
-  constructor(fn: Function) {
+  constructor(fn: Function, public schedular?: Function) {
     this._fn = fn
   }
   run() {
     activeEffect = this
-    cleanupEffect(this)
-    activeEffectStack.push(this)
+    // cleanupEffect(this)
+    // activeEffectStack.push(this)
     let result = this._fn()
-    activeEffect = activeEffectStack[activeEffectStack.length - 2]
-    activeEffectStack.length > 1 && activeEffectStack.pop()
+    // activeEffect = activeEffectStack[activeEffectStack.length - 2]
+    // activeEffectStack.length > 1 && activeEffectStack.pop()
     return result
+  }
+  stop() {
+    cleanupEffect(this)
   }
 }
 
-export function effect(fn: Function) {
-  let effect = new ReactiveEffect(fn)
-  return effect.run()
+export function effect(fn: Function, options: any = {}) {
+  let effect = new ReactiveEffect(fn, options.schedular)
+  effect.run()
+  let runner = effect.run.bind(effect)
+  return runner
 }
 
-function cleanupEffect(effect: ReactiveEffect) {
-  effect.deps.forEach((effect) => {})
-  effect.deps.length = 0
+function cleanupEffect(effect) {
+  effect.deps.forEach((dep) => {
+    dep.delete(effect) // 删除当前依赖
+  })
 }
 
 export function track(target: object, key: PropertyKey) {
@@ -37,8 +43,10 @@ export function track(target: object, key: PropertyKey) {
   let dep = depsMap.get(key)
   if (!dep) depsMap.set(key, (dep = new Set()))
 
+  if (!activeEffect) return
+
   dep.add(activeEffect)
-  activeEffect?.deps.push(activeEffect)
+  activeEffect?.deps.push(dep)
 }
 
 export function trigger(target: object, key: PropertyKey) {
@@ -46,6 +54,10 @@ export function trigger(target: object, key: PropertyKey) {
   if (!depsMap) return
   let effects = depsMap.get(key)
   for (const effect of effects) {
-    if (effect !== activeEffect) effect?.run()
+    if (effect?.schedular) {
+      effect.schedular()
+    } else if (effect !== activeEffect) {
+      effect?.run()
+    }
   }
 }

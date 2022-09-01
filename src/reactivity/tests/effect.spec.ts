@@ -6,18 +6,40 @@ describe('effect', () => {
     let li = reactive({
       age: 21,
     })
-    let age
 
     expect(li.age).toBe(21)
 
-    li.age += 2
-
     let result = effect(() => {
-      return li.age + 1;
+      return ++li.age
     })
-
-    expect(result).toBe(24)
+    let age = result();
+    expect(age).toBe(23)
 
     expect(li.age).toBe(23)
+  })
+})
+
+describe('effect schedular', () => {
+  it('schedular', () => {
+    let test2 = reactive({
+      num: 1,
+    })
+
+    let run: any
+    let tnum: number = 0
+    let runner = effect(
+      () => {
+        tnum = test2.num
+      },
+      {
+        schedular: () => {
+          run = runner
+        }, 
+      }
+    )
+    expect(tnum).toBe(1)
+    test2.num++
+    run()
+    expect(tnum).toBe(2)
   })
 })
