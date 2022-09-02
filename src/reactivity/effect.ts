@@ -56,7 +56,7 @@ export function trigger(target: object, key: PropertyKey) {
   for (const effect of effects) {
     if (effect?.schedular) {
       effect.schedular()
-    } else if (effect !== activeEffect) {
+    } else {
       effect?.run()
     }
   }
