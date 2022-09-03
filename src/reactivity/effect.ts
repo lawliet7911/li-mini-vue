@@ -6,7 +6,8 @@ let activeEffect: ReactiveEffect | null
 class ReactiveEffect {
   private _fn: Function
   deps: any[] = []
-  constructor(fn: Function, public schedular?: Function) {
+  onStop?: () => void
+  constructor(fn: Function, public scheduler?: Function) {
     this._fn = fn
   }
   run() {
@@ -19,14 +20,19 @@ class ReactiveEffect {
     return result
   }
   stop() {
+    if (typeof this.onStop == 'function') this.onStop()
     cleanupEffect(this)
   }
 }
 
 export function effect(fn: Function, options: any = {}) {
-  let effect = new ReactiveEffect(fn, options.schedular)
+  let { scheduler, onStop } = options
+
+  let effect = new ReactiveEffect(fn, scheduler)
+  effect.onStop = onStop
   effect.run()
-  let runner = effect.run.bind(effect)
+  let runner: any = effect.run.bind(effect)
+  runner.effect = effect
   return runner
 }
 
@@ -46,7 +52,7 @@ export function track(target: object, key: PropertyKey) {
   if (!activeEffect) return
 
   dep.add(activeEffect)
-  activeEffect?.deps.push(dep)
+  activeEffect.deps.push(dep)
 }
 
 export function trigger(target: object, key: PropertyKey) {
@@ -54,8 +60,8 @@ export function trigger(target: object, key: PropertyKey) {
   if (!depsMap) return
   let effects = depsMap.get(key)
   for (const effect of effects) {
-    if (effect?.schedular) {
-      effect.schedular()
+    if (effect?.scheduler) {
+      effect.scheduler()
     } else {
       effect?.run()
     }

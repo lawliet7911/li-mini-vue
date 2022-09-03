@@ -2,15 +2,11 @@ import { isObject } from '../shared'
 import { track, trigger } from './effect'
 const proxyMap = new WeakMap()
 
-function isReactive(target: any): boolean {
-  return target.hasOwnProperty('_raw')
-}
-
 const baseHandler = {
   get(target: object, key: PropertyKey, receiver: object) {
     track(target, key)
     let data = Reflect.get(target, key, receiver)
-    let o =  !isObject(data) ? data : isReactive(data) ? data : reactive(data)
+    let o = !isObject(data) ? data : reactive(data)
     // console.log(o)
     return o
   },
@@ -22,17 +18,16 @@ const baseHandler = {
 }
 
 function createReactiveObject(target: object, isShallow: boolean = false, isReadonly: boolean = false) {
-  let proxy:any = new Proxy(target, baseHandler)
-  proxy._raw = target
-  return proxy 
+  let existProxy: any = proxyMap.get(target)
+  if (!existProxy) {
+    existProxy = new Proxy(target, baseHandler)
+    // existProxy._raw = target
+    proxyMap.set(target, existProxy)
+  }
+  return existProxy
 }
 
 export function reactive(target: object) {
-  let proxyTarget = proxyMap.get(target)
-  if (!proxyTarget) {
-    proxyTarget = createReactiveObject(target)
-    proxyMap.set(target, proxyTarget)
-  }
-  console.log('12313112312')
-  return proxyTarget
+  let reactiveObj = createReactiveObject(target)
+  return reactiveObj
 }
